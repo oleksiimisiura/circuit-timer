@@ -20,6 +20,17 @@ html{-webkit-text-size-adjust:100%}body{margin:0;touch-action:manipulation;-webk
 h1{font-size:22px;margin:4px 0 18px;letter-spacing:.3px}
 h1 span{color:var(--acc)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+details.card{padding:0}
+details.card>summary{list-style:none;cursor:pointer;padding:16px;display:flex;align-items:center;gap:10px;user-select:none;-webkit-user-select:none}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary .tt{font-size:16px;font-weight:700}
+details.card>summary .inf{flex:1;color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+details.card>summary .chev{color:var(--mut);transition:transform .2s;font-size:14px}
+details.card[open]>summary .chev{transform:rotate(180deg)}
+details.card .body{padding:0 16px 16px;border-top:1px solid var(--line);padding-top:14px}
+details.sub>summary{list-style:none;cursor:pointer;font-size:13px;color:var(--mut);margin-top:14px}
+details.sub>summary::-webkit-details-marker{display:none}
+details.sub[open]>summary{color:var(--txt)}
 .card h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 12px;font-weight:600}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:end}
 label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut)}
@@ -67,19 +78,21 @@ button.btn{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-wei
 <div class="wrap" id="setup">
   <h1>⏱ Круговой <span>таймер</span></h1>
 
-  <div class="card">
-    <h2>Упражнения</h2>
-    <div id="list"></div>
-    <datalist id="presets"></datalist>
-    <div class="row" style="margin-top:6px">
-      <button class="btn sec" id="add">+ Добавить упражнение</button>
+  <details class="card" id="dEx">
+    <summary><span class="tt">🏋️ Упражнения</span><span class="inf" id="infEx"></span><span class="chev">▼</span></summary>
+    <div class="body">
+      <div id="list"></div>
+      <datalist id="presets"></datalist>
+      <div class="row" style="margin-top:6px">
+        <button class="btn sec" id="add">+ Добавить упражнение</button>
+      </div>
+      <details class="sub"><summary>＋ Быстро добавить из списка ▾</summary><div class="chips" id="chips"></div></details>
     </div>
-    <div style="font-size:12px;color:var(--mut);margin-top:12px">Быстро добавить из списка:</div>
-    <div class="chips" id="chips"></div>
-  </div>
+  </details>
 
-  <div class="card">
-    <h2>Параметры</h2>
+  <details class="card" id="dPar">
+    <summary><span class="tt">⚙️ Параметры</span><span class="inf" id="infPar"></span><span class="chev">▼</span></summary>
+    <div class="body">
     <div class="grid3">
       <label class="f">Кругов<input type="number" inputmode="numeric" id="rounds" min="1" max="99" value="3"></label>
       <label class="f">Отдых между кругами, с<input type="number" inputmode="numeric" id="roundRest" min="0" max="900" value="60"></label>
@@ -90,7 +103,8 @@ button.btn{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-wei
       <label class="chk"><input type="checkbox" id="voice"> Озвучивать упражнение</label>
       <button class="btn sec" id="test" style="padding:8px 14px">🔔 Проверить гонг</button>
     </div>
-  </div>
+    </div>
+  </details>
 
   <div class="sum" id="sum"></div>
   <button class="btn pri big" id="start">СТАРТ</button>
@@ -136,6 +150,9 @@ function render(){
 function upd(){
  const seq=build(true);const tot=seq.reduce((a,s)=>a+s.d,0);
  $("sum").textContent=exercises.length?`Общее время: ${fmt(tot)} · ${exercises.length} упр. × ${num($("rounds").value,1)||1} кр.`:"Добавьте хотя бы одно упражнение";
+ const R=num($("rounds").value,1)||1;
+ $("infEx").textContent=exercises.length?`${exercises.length} · ${exercises.map(e=>e.n||"—").join(", ")}`:"пусто";
+ $("infPar").textContent=`${R} кр. · отдых ${num($("roundRest").value,0)} с · старт ${num($("prep").value,0)} с`;
  save()}
 $("presets").innerHTML=PRESETS.map(p=>`<option value="${p}">`).join("");
 $("chips").innerHTML=PRESETS.slice(0,14).map(p=>`<button class="chip">${p}</button>`).join("");
@@ -221,6 +238,8 @@ $("pause").onclick=()=>{
  if(paused){$("pause").textContent="▶ Продолжить";$("phase").textContent="Пауза"}
  else{endAt=performance.now()+remain*1000;$("pause").textContent="❚❚ Пауза";$("phase").textContent=PH[seq[idx].t]}};
 document.addEventListener("keydown",e=>{if($("run").style.display==="flex"&&e.code==="Space"){e.preventDefault();$("pause").click()}});
+["dEx","dPar"].forEach(id=>{const d=$(id);try{d.open=localStorage.getItem("open_"+id)==="1"}catch(e){}
+ d.addEventListener("toggle",()=>{try{localStorage.setItem("open_"+id,d.open?"1":"0")}catch(e){}})});
 load();render();
 </script>
 </body>
