@@ -258,6 +258,8 @@ document.addEventListener("keydown",e=>{if($("run").style.display==="flex"&&e.co
 ["dEx","dPar"].forEach(id=>{const d=$(id);try{d.open=localStorage.getItem("open_"+id)==="1"}catch(e){}
  d.addEventListener("toggle",()=>{try{localStorage.setItem("open_"+id,d.open?"1":"0")}catch(e){}})});
 load();render();
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+addEventListener("pagehide",save);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")save()});
 </script>
 </body>
 </html>
