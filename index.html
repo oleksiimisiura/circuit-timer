@@ -98,10 +98,11 @@ button.btn{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-wei
       <label class="f">Отдых между кругами, с<input type="number" inputmode="numeric" id="roundRest" min="0" max="900" value="60"></label>
       <label class="f">Подготовка, с<input type="number" inputmode="numeric" id="prep" min="0" max="60" value="10"></label>
     </div>
+    <label class="f" style="margin-top:12px">Звук<select id="sound"><option value="bell">🥊 Боксёрский колокол</option><option value="gong">🔔 Гонг</option></select></label>
     <div class="row" style="margin-top:14px;gap:18px">
       <label class="chk"><input type="checkbox" id="beeps" checked> Сигналы на последних 3 с</label>
       <label class="chk"><input type="checkbox" id="voice"> Озвучивать упражнение</label>
-      <button class="btn sec" id="test" style="padding:8px 14px">🔔 Проверить гонг</button>
+      <button class="btn sec" id="test" style="padding:8px 14px">🔔 Проверить звук</button>
     </div>
     </div>
   </details>
@@ -129,9 +130,9 @@ button.btn{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-wei
 const PRESETS=["Приседания","Отжимания","Бёрпи","Планка","Выпады","Скалолаз","Прыжки «Джампинг Джек»","Скручивания","Ягодичный мост","Скакалка","Бег на месте с высоким подниманием бёдер","Прыжки из приседа","Обратные отжимания от скамьи","Боковая планка","Супермен","Велосипед (пресс)","Махи гирей","Подтягивания","Тяга гантелей в наклоне","Жим гантелей стоя","Стульчик у стены","Конькобежец","Русские скручивания","Планка с касанием плеч"];
 const $=id=>document.getElementById(id);
 let exercises=[];
-function load(){try{const s=JSON.parse(localStorage.getItem("circuitTimer")||"null");if(s){exercises=s.ex;$("rounds").value=s.rounds;$("roundRest").value=s.roundRest;$("prep").value=s.prep;$("beeps").checked=s.beeps;$("voice").checked=!!s.voice;return}}catch(e){}
+function load(){try{const s=JSON.parse(localStorage.getItem("circuitTimer")||"null");if(s){exercises=s.ex;$("rounds").value=s.rounds;$("roundRest").value=s.roundRest;$("prep").value=s.prep;$("beeps").checked=s.beeps;$("voice").checked=!!s.voice;if(s.sound)$("sound").value=s.sound;return}}catch(e){}
  exercises=[{n:"Приседания",w:40,r:20},{n:"Отжимания",w:40,r:20},{n:"Бёрпи",w:30,r:30},{n:"Планка",w:45,r:15}]}
-function save(){try{localStorage.setItem("circuitTimer",JSON.stringify({ex:exercises,rounds:$("rounds").value,roundRest:$("roundRest").value,prep:$("prep").value,beeps:$("beeps").checked,voice:$("voice").checked}))}catch(e){}}
+function save(){try{localStorage.setItem("circuitTimer",JSON.stringify({ex:exercises,rounds:$("rounds").value,roundRest:$("roundRest").value,prep:$("prep").value,beeps:$("beeps").checked,voice:$("voice").checked,sound:$("sound").value}))}catch(e){}}
 const num=(v,d)=>{v=parseInt(v,10);return isNaN(v)||v<0?d:v};
 const fmt=s=>{s=Math.max(0,Math.ceil(s));const m=Math.floor(s/60);return m+":"+String(s%60).padStart(2,"0")};
 
@@ -158,7 +159,7 @@ $("presets").innerHTML=PRESETS.map(p=>`<option value="${p}">`).join("");
 $("chips").innerHTML=PRESETS.slice(0,14).map(p=>`<button class="chip">${p}</button>`).join("");
 $("chips").onclick=ev=>{if(ev.target.classList.contains("chip")){const l=exercises[exercises.length-1];exercises.push({n:ev.target.textContent,w:l?l.w:40,r:l?l.r:20});render()}};
 $("add").onclick=()=>{const l=exercises[exercises.length-1];exercises.push({n:"",w:l?l.w:40,r:l?l.r:20});render();const ins=$("list").querySelectorAll(".ex input[list]");ins[ins.length-1].focus()};
-["rounds","roundRest","prep","beeps","voice"].forEach(id=>$(id).addEventListener("input",upd));
+["rounds","roundRest","prep","beeps","voice","sound"].forEach(id=>$(id).addEventListener("input",upd));
 
 function build(){
  const R=num($("rounds").value,1)||1,RR=num($("roundRest").value,0),P=num($("prep").value,0);
@@ -192,9 +193,25 @@ function gong(strong=1){
  // удар (шум)
  const b=a.createBuffer(1,a.sampleRate*.08,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)**3;
  const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();f.type="lowpass";f.frequency.value=1800;g.gain.value=.5;s.buffer=b;s.connect(f);f.connect(g);g.connect(out);s.start(t)}
+let comp;function bus(){const a=ctx();if(!comp){comp=a.createDynamicsCompressor();comp.threshold.value=-10;comp.ratio.value=4;comp.connect(a.destination)}return comp}
+// боксёрский колокол: яркий латунный «динг»
+function ding(t,vol=1){
+ const a=ctx(),out=a.createGain();out.gain.value=.55*vol;out.connect(bus());const f0=1046;
+ [[1,1,2.8],[1.004,.7,2.8],[2.756,.55,1.7],[2.761,.35,1.7],[5.404,.38,.9],[8.933,.22,.5],[13.34,.12,.3],[.5,.12,1.2]].forEach(([m,g,dur])=>{
+  const o=a.createOscillator(),G=a.createGain();o.type="sine";o.frequency.value=f0*m;
+  G.gain.setValueAtTime(0,t);G.gain.linearRampToValueAtTime(g,t+.002);G.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(G);G.connect(out);o.start(t);o.stop(t+dur+.05)});
+ const b=a.createBuffer(1,a.sampleRate*.03,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)**4;
+ const n=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();f.type="highpass";f.frequency.value=2500;g.gain.value=.45;n.buffer=b;n.connect(f);f.connect(g);g.connect(out);n.start(t)}
+function bell(times,gap=.22){const t=ctx().currentTime+.02;for(let i=0;i<times;i++)ding(t+i*gap,i===times-1?1:.85)}
+function signal(kind){
+ const boxing=$("sound").value==="bell";
+ if(kind==="work")boxing?bell(1):gong(1);
+ else if(kind==="rest")boxing?bell(2):gong(1);
+ else if(kind==="finish"){if(boxing)bell(6,.2);else{gong(2);setTimeout(()=>gong(2),900)}}}
 function beep(hi){const a=ctx(),t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type="square";o.frequency.value=hi?1320:880;g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.0001,t+.15);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.17)}
 function say(txt){if(!$("voice").checked||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt);u.lang="ru-RU";speechSynthesis.speak(u)}catch(e){}}
-$("test").onclick=()=>gong();
+$("test").onclick=()=>signal("work");
 
 /* ---- runner ---- */
 let seq=[],idx=0,endAt=0,remain=0,paused=false,timer=null,lastBeep=-1,wl=null;
@@ -211,7 +228,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 function go(i){
  idx=i;if(idx>=seq.length)return finish();
  const s=seq[idx];remain=s.d;endAt=performance.now()+s.d*1000;lastBeep=-1;paused=false;$("pause").textContent="❚❚ Пауза";
- if(s.t==="work"){gong(1);say(s.name)}else if(s.t==="rest"){gong(1);say(s.name)}else say("Приготовьтесь");
+ if(s.t==="work"){signal("work");say(s.name)}else if(s.t==="rest"){signal("rest");say(s.name)}else say("Приготовьтесь");
  $("run").className=s.t;$("phase").textContent=PH[s.t];$("phase").style.color=COL[s.t];$("arc").style.stroke=COL[s.t];
  $("exname").textContent=s.t==="work"?s.name:(s.t==="rest"?s.name:"");
  $("rNum").textContent=s.r;$("eNum").textContent=s.i+1;
@@ -225,7 +242,7 @@ function tick(){
  if($("beeps").checked&&sec<=3&&sec!==lastBeep){lastBeep=sec;beep(false)}
  const rest=seq.slice(idx+1).reduce((a,x)=>a+x.d,0)+remain;$("left").textContent=fmt(rest)}
 function finish(){
- clearInterval(timer);gong(2);setTimeout(()=>gong(2),900);say("Тренировка завершена");
+ clearInterval(timer);signal("finish");say("Тренировка завершена");
  $("run").className="";$("phase").textContent="Готово";$("phase").style.color="var(--rest)";
  $("time").innerHTML='<span class="done">🏁</span>';$("exname").textContent="Тренировка завершена!";$("next").textContent="";
  $("arc").style.strokeDashoffset=0;$("arc").style.stroke="var(--rest)";$("left").textContent="0:00";$("pause").textContent="↻ Заново"}
