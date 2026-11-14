@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Таймер">
+<meta name="theme-color" content="#111316">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<title>Круговой таймер</title>
+<style>
+:root{--bg:#111316;--card:#1b1e23;--line:#2a2f37;--txt:#eef1f5;--mut:#8b94a3;--work:#ff5a36;--rest:#2ec4b6;--prep:#f4b400;--acc:#ff5a36}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}body{margin:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+h1{font-size:22px;margin:4px 0 18px;letter-spacing:.3px}
+h1 span{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 12px;font-weight:600}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:end}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut)}
+input,select{background:#0f1114;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:10px;font-size:16px;width:100%;font-family:inherit}
+input:focus{outline:2px solid var(--acc);border-color:transparent}
+.ex{display:grid;grid-template-columns:22px 1fr 84px 84px 40px;gap:8px;align-items:end;margin-bottom:10px}
+.ex .mini{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--mut);text-align:center}
+.ex .n{padding-bottom:12px}
+@media(max-width:560px){.ex{grid-template-columns:22px 1fr 1fr 44px;row-gap:6px;padding-bottom:10px;border-bottom:1px solid var(--line)}.ex .nm{grid-column:2/5}.ex label:nth-of-type(1){grid-column:2;grid-row:2}.ex label:nth-of-type(2){grid-column:3;grid-row:2}.ex .icon{grid-column:4;grid-row:2}.ex .n{grid-row:1;padding-bottom:12px}}
+.ex .n{color:var(--mut);font-size:13px;text-align:center}
+.ex input[type=number]{text-align:center}
+.icon{background:none;border:1px solid var(--line);color:var(--mut);border-radius:9px;height:40px;cursor:pointer;font-size:16px}
+.icon:hover{color:#fff;border-color:#555}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button.btn{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn.pri{background:var(--acc);color:#fff}
+.btn.sec{background:#262a31;color:var(--txt)}
+.btn.big{width:100%;padding:16px;font-size:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#262a31;border:0;color:var(--txt);border-radius:20px;padding:6px 11px;font-size:13px;cursor:pointer}
+.chip:hover{background:#333944}
+.sum{color:var(--mut);font-size:14px;margin:4px 0 12px;text-align:center}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--txt)}
+.chk input{width:auto}
+/* run */
+#run{display:none;position:fixed;inset:0;background:var(--bg);flex-direction:column;align-items:center;justify-content:space-between;padding:calc(18px + env(safe-area-inset-top)) 16px calc(22px + env(safe-area-inset-bottom));transition:background .4s}
+#run.work{background:radial-gradient(circle at 50% 40%,#3a1810,#111316 70%)}
+#run.rest{background:radial-gradient(circle at 50% 40%,#0d3330,#111316 70%)}
+#run.prep{background:radial-gradient(circle at 50% 40%,#3a2e08,#111316 70%)}
+.top{width:100%;max-width:720px;display:flex;justify-content:space-between;color:var(--mut);font-size:15px}
+.top b{color:var(--txt)}
+.phase{font-size:18px;letter-spacing:3px;text-transform:uppercase;font-weight:700}
+.ring{position:relative;width:min(78vw,62vh,420px);aspect-ratio:1}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12%}
+.time{font-size:min(24vw,19vh,130px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.exname{font-size:min(6vw,30px);font-weight:700;margin-top:10px}
+.next{color:var(--mut);font-size:15px;min-height:20px}
+.ctrl{display:flex;gap:12px;width:100%;max-width:420px}
+.ctrl button{flex:1;padding:16px 8px}
+.done{font-size:34px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap" id="setup">
+  <h1>⏱ Круговой <span>таймер</span></h1>
+
+  <div class="card">
+    <h2>Упражнения</h2>
+    <div id="list"></div>
+    <datalist id="presets"></datalist>
+    <div class="row" style="margin-top:6px">
+      <button class="btn sec" id="add">+ Добавить упражнение</button>
+    </div>
+    <div style="font-size:12px;color:var(--mut);margin-top:12px">Быстро добавить из списка:</div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="card">
+    <h2>Параметры</h2>
+    <div class="grid3">
+      <label class="f">Кругов<input type="number" inputmode="numeric" id="rounds" min="1" max="99" value="3"></label>
+      <label class="f">Отдых между кругами, с<input type="number" inputmode="numeric" id="roundRest" min="0" max="900" value="60"></label>
+      <label class="f">Подготовка, с<input type="number" inputmode="numeric" id="prep" min="0" max="60" value="10"></label>
+    </div>
+    <div class="row" style="margin-top:14px;gap:18px">
+      <label class="chk"><input type="checkbox" id="beeps" checked> Сигналы на последних 3 с</label>
+      <label class="chk"><input type="checkbox" id="voice"> Озвучивать упражнение</label>
+      <button class="btn sec" id="test" style="padding:8px 14px">🔔 Проверить гонг</button>
+    </div>
+  </div>
+
+  <div class="sum" id="sum"></div>
+  <button class="btn pri big" id="start">СТАРТ</button>
+</div>
+
+<div id="run">
+  <div class="top"><span>Круг <b id="rNum">1</b> / <b id="rTot">1</b></span><span>Упр. <b id="eNum">1</b> / <b id="eTot">1</b></span><span>Осталось <b id="left">0:00</b></span></div>
+  <div class="phase" id="phase">Работа</div>
+  <div class="ring">
+    <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="#2a2f37" stroke-width="5"/><circle id="arc" cx="50" cy="50" r="45" fill="none" stroke="var(--work)" stroke-width="5" stroke-linecap="round" stroke-dasharray="282.74" stroke-dashoffset="0"/></svg>
+    <div class="c"><div class="time" id="time">0</div><div class="exname" id="exname"></div></div>
+  </div>
+  <div class="next" id="next"></div>
+  <div class="ctrl">
+    <button class="btn sec" id="stop">■ Стоп</button>
+    <button class="btn pri" id="pause">❚❚ Пауза</button>
+    <button class="btn sec" id="skip">⏭ Далее</button>
+  </div>
+</div>
+
+<script>
+const PRESETS=["Приседания","Отжимания","Бёрпи","Планка","Выпады","Скалолаз","Прыжки «Джампинг Джек»","Скручивания","Ягодичный мост","Скакалка","Бег на месте с высоким подниманием бёдер","Прыжки из приседа","Обратные отжимания от скамьи","Боковая планка","Супермен","Велосипед (пресс)","Махи гирей","Подтягивания","Тяга гантелей в наклоне","Жим гантелей стоя","Стульчик у стены","Конькобежец","Русские скручивания","Планка с касанием плеч"];
+const $=id=>document.getElementById(id);
+let exercises=[];
+function load(){try{const s=JSON.parse(localStorage.getItem("circuitTimer")||"null");if(s){exercises=s.ex;$("rounds").value=s.rounds;$("roundRest").value=s.roundRest;$("prep").value=s.prep;$("beeps").checked=s.beeps;$("voice").checked=!!s.voice;return}}catch(e){}
+ exercises=[{n:"Приседания",w:40,r:20},{n:"Отжимания",w:40,r:20},{n:"Бёрпи",w:30,r:30},{n:"Планка",w:45,r:15}]}
+function save(){try{localStorage.setItem("circuitTimer",JSON.stringify({ex:exercises,rounds:$("rounds").value,roundRest:$("roundRest").value,prep:$("prep").value,beeps:$("beeps").checked,voice:$("voice").checked}))}catch(e){}}
+const num=(v,d)=>{v=parseInt(v,10);return isNaN(v)||v<0?d:v};
+const fmt=s=>{s=Math.max(0,Math.ceil(s));const m=Math.floor(s/60);return m+":"+String(s%60).padStart(2,"0")};
+
+function render(){
+ const L=$("list");L.innerHTML="";
+ exercises.forEach((e,i)=>{
+  const d=document.createElement("div");d.className="ex";
+  d.innerHTML=`<span class="n">${i+1}</span><input class="nm" list="presets" placeholder="Выберите или впишите" value="${e.n.replace(/"/g,"&quot;")}"><label class="mini">работа, с<input type="number" inputmode="numeric" min="1" value="${e.w}"></label><label class="mini">отдых, с<input type="number" inputmode="numeric" min="0" value="${e.r}"></label><button class="icon" title="Удалить">✕</button>`;
+  const [nm,w,r]=d.querySelectorAll("input");
+  nm.oninput=()=>{e.n=nm.value;upd()};
+  w.oninput=()=>{e.w=num(w.value,1)||1;upd()};
+  r.oninput=()=>{e.r=num(r.value,0);upd()};
+  d.querySelector("button").onclick=()=>{exercises.splice(i,1);render()};
+  L.appendChild(d)});
+ upd()}
+function upd(){
+ const seq=build(true);const tot=seq.reduce((a,s)=>a+s.d,0);
+ $("sum").textContent=exercises.length?`Общее время: ${fmt(tot)} · ${exercises.length} упр. × ${num($("rounds").value,1)||1} кр.`:"Добавьте хотя бы одно упражнение";
+ save()}
+$("presets").innerHTML=PRESETS.map(p=>`<option value="${p}">`).join("");
+$("chips").innerHTML=PRESETS.slice(0,14).map(p=>`<button class="chip">${p}</button>`).join("");
+$("chips").onclick=ev=>{if(ev.target.classList.contains("chip")){const l=exercises[exercises.length-1];exercises.push({n:ev.target.textContent,w:l?l.w:40,r:l?l.r:20});render()}};
+$("add").onclick=()=>{const l=exercises[exercises.length-1];exercises.push({n:"",w:l?l.w:40,r:l?l.r:20});render();const ins=$("list").querySelectorAll(".ex input[list]");ins[ins.length-1].focus()};
+["rounds","roundRest","prep","beeps","voice"].forEach(id=>$(id).addEventListener("input",upd));
+
+function build(){
+ const R=num($("rounds").value,1)||1,RR=num($("roundRest").value,0),P=num($("prep").value,0);
+ const ex=exercises.filter(e=>e.w>0);const seq=[];if(!ex.length)return seq;
+ if(P>0)seq.push({t:"prep",d:P,name:"Приготовьтесь",r:1,i:0});
+ for(let r=1;r<=R;r++)ex.forEach((e,i)=>{
+  seq.push({t:"work",d:e.w,name:e.n||`Упражнение ${i+1}`,r,i});
+  const lastEx=i===ex.length-1,lastR=r===R;
+  if(lastEx&&lastR)return;
+  const d=lastEx?(RR>0?RR:e.r):e.r;
+  if(d>0)seq.push({t:"rest",d,name:lastEx?"Отдых между кругами":"Отдых",r,i});
+ });
+ return seq}
+
+/* ---- audio ---- */
+let ac;
+let keep;function unlockIOS(){
+ try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
+ try{if(!keep){const sr=8000,n=sr,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  keep=new Audio(URL.createObjectURL(new Blob([b],{type:"audio/wav"})));keep.loop=true;keep.setAttribute("playsinline","")}
+  keep.play().catch(()=>{})}catch(e){}}
+function ctx(){unlockIOS();if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)()}if(ac.state==="suspended")ac.resume();return ac}
+function gong(strong=1){
+ const a=ctx(),t=a.currentTime,base=strong>1?98:130;
+ const out=a.createGain();out.gain.value=.5;out.connect(a.destination);
+ [[1,1,5],[2.01,.6,4],[2.76,.5,3.5],[3.9,.3,2.6],[5.4,.22,2],[6.8,.12,1.4],[.5,.35,5.5]].forEach(([m,g,dur])=>{
+  const o=a.createOscillator(),G=a.createGain();o.type="sine";o.frequency.setValueAtTime(base*m*1.01,t);o.frequency.exponentialRampToValueAtTime(base*m,t+.3);
+  G.gain.setValueAtTime(0,t);G.gain.linearRampToValueAtTime(g*strong*.6,t+.01);G.gain.exponentialRampToValueAtTime(.0001,t+dur*(strong>1?1.3:1));
+  o.connect(G);G.connect(out);o.start(t);o.stop(t+dur*1.4)});
+ // удар (шум)
+ const b=a.createBuffer(1,a.sampleRate*.08,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)**3;
+ const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();f.type="lowpass";f.frequency.value=1800;g.gain.value=.5;s.buffer=b;s.connect(f);f.connect(g);g.connect(out);s.start(t)}
+function beep(hi){const a=ctx(),t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type="square";o.frequency.value=hi?1320:880;g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.0001,t+.15);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.17)}
+function say(txt){if(!$("voice").checked||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt);u.lang="ru-RU";speechSynthesis.speak(u)}catch(e){}}
+$("test").onclick=()=>gong();
+
+/* ---- runner ---- */
+let seq=[],idx=0,endAt=0,remain=0,paused=false,timer=null,lastBeep=-1,wl=null;
+const COL={work:"var(--work)",rest:"var(--rest)",prep:"var(--prep)"};
+const PH={work:"Работа",rest:"Отдых",prep:"Подготовка"};
+function start(){
+ seq=build();if(!seq.length)return;ctx();
+ $("setup").style.display="none";$("run").style.display="flex";
+ $("rTot").textContent=num($("rounds").value,1)||1;$("eTot").textContent=exercises.filter(e=>e.w>0).length;
+ lockScreen();
+ go(0)}
+function lockScreen(){try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>wl=l).catch(()=>{})}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&$("run").style.display==="flex"){lockScreen();if(ac&&ac.state!=="running")ac.resume()}});
+function go(i){
+ idx=i;if(idx>=seq.length)return finish();
+ const s=seq[idx];remain=s.d;endAt=performance.now()+s.d*1000;lastBeep=-1;paused=false;$("pause").textContent="❚❚ Пауза";
+ if(s.t==="work"){gong(1);say(s.name)}else if(s.t==="rest"){gong(1);say(s.name)}else say("Приготовьтесь");
+ $("run").className=s.t;$("phase").textContent=PH[s.t];$("phase").style.color=COL[s.t];$("arc").style.stroke=COL[s.t];
+ $("exname").textContent=s.t==="work"?s.name:(s.t==="rest"?s.name:"");
+ $("rNum").textContent=s.r;$("eNum").textContent=s.i+1;
+ const nx=seq.slice(idx+1).find(x=>x.t==="work");$("next").textContent=nx?`Далее: ${nx.name}${nx.r!==s.r?` (круг ${nx.r})`:""}`:"Последнее упражнение!";
+ clearInterval(timer);timer=setInterval(tick,50);tick()}
+function tick(){
+ if(paused)return;const s=seq[idx];remain=(endAt-performance.now())/1000;
+ if(remain<=0)return go(idx+1);
+ const sec=Math.ceil(remain);$("time").textContent=sec>=60?fmt(sec):sec;
+ $("arc").style.strokeDashoffset=282.74*(1-remain/s.d);
+ if($("beeps").checked&&sec<=3&&sec!==lastBeep){lastBeep=sec;beep(false)}
+ const rest=seq.slice(idx+1).reduce((a,x)=>a+x.d,0)+remain;$("left").textContent=fmt(rest)}
+function finish(){
+ clearInterval(timer);gong(2);setTimeout(()=>gong(2),900);say("Тренировка завершена");
+ $("run").className="";$("phase").textContent="Готово";$("phase").style.color="var(--rest)";
+ $("time").innerHTML='<span class="done">🏁</span>';$("exname").textContent="Тренировка завершена!";$("next").textContent="";
+ $("arc").style.strokeDashoffset=0;$("arc").style.stroke="var(--rest)";$("left").textContent="0:00";$("pause").textContent="↻ Заново"}
+function stop(){clearInterval(timer);try{speechSynthesis.cancel()}catch(e){}try{wl&&wl.release();wl=null;keep&&keep.pause()}catch(e){}$("run").style.display="none";$("setup").style.display="block"}
+$("start").onclick=start;$("stop").onclick=stop;
+$("skip").onclick=()=>{if(idx<seq.length)go(idx+1)};
+$("pause").onclick=()=>{
+ if(idx>=seq.length)return go(0);
+ paused=!paused;
+ if(paused){$("pause").textContent="▶ Продолжить";$("phase").textContent="Пауза"}
+ else{endAt=performance.now()+remain*1000;$("pause").textContent="❚❚ Пауза";$("phase").textContent=PH[seq[idx].t]}};
+document.addEventListener("keydown",e=>{if($("run").style.display==="flex"&&e.code==="Space"){e.preventDefault();$("pause").click()}});
+load();render();
+</script>
+</body>
+</html>
