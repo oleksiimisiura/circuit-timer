@@ -62,8 +62,9 @@ button.btn{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-wei
 #run.prep{background:radial-gradient(circle at 50% 40%,#3a2e08,#111316 70%)}
 .top{width:100%;max-width:720px;display:flex;justify-content:space-between;color:var(--mut);font-size:15px}
 .top b{color:var(--txt)}
-.phase{font-size:18px;letter-spacing:3px;text-transform:uppercase;font-weight:700}
-.ring{position:relative;width:min(78vw,62vh,420px);aspect-ratio:1}
+.phase{font-size:18px;letter-spacing:3px;text-transform:uppercase;font-weight:700;text-align:center}
+.phase.big{font-size:min(10vw,6.5vh,60px);letter-spacing:1px;text-transform:none;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+.ring{position:relative;width:min(78vw,52vh,420px);aspect-ratio:1}
 .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 12%}
 .time{font-size:min(24vw,19vh,130px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
@@ -225,11 +226,15 @@ function start(){
  go(0)}
 function lockScreen(){try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>wl=l).catch(()=>{})}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&$("run").style.display==="flex"){lockScreen();if(ac&&ac.state!=="running")ac.resume()}});
+function showPhase(s){
+ const P=$("phase");
+ if(s.t==="work"){P.className="phase big";P.innerHTML=`<div>Раунд ${s.r}/${$("rTot").textContent}</div><div>Упражнение ${s.i+1}/${$("eTot").textContent}</div>`}
+ else{P.className="phase";P.textContent=PH[s.t]}}
 function go(i){
  idx=i;if(idx>=seq.length)return finish();
  const s=seq[idx];remain=s.d;endAt=performance.now()+s.d*1000;lastBeep=-1;paused=false;$("pause").textContent="❚❚ Пауза";
  if(s.t==="work"){signal("work");say(s.name)}else if(s.t==="rest"){signal("rest");say(s.name)}else say("Приготовьтесь");
- $("run").className=s.t;$("phase").textContent=PH[s.t];$("phase").style.color=COL[s.t];$("arc").style.stroke=COL[s.t];
+ $("run").className=s.t;showPhase(s);$("phase").style.color=COL[s.t];$("arc").style.stroke=COL[s.t];
  $("exname").textContent=s.t==="work"?s.name:(s.t==="rest"?s.name:"");
  $("rNum").textContent=s.r;$("eNum").textContent=s.i+1;
  const nx=seq.slice(idx+1).find(x=>x.t==="work");$("next").textContent=nx?`Далее: ${nx.name}${nx.r!==s.r?` (круг ${nx.r})`:""}`:"Последнее упражнение!";
@@ -243,7 +248,7 @@ function tick(){
  const rest=seq.slice(idx+1).reduce((a,x)=>a+x.d,0)+remain;$("left").textContent=fmt(rest)}
 function finish(){
  clearInterval(timer);signal("finish");say("Тренировка завершена");
- $("run").className="";$("phase").textContent="Готово";$("phase").style.color="var(--rest)";
+ $("run").className="";$("phase").className="phase";$("phase").textContent="Готово";$("phase").style.color="var(--rest)";
  $("time").innerHTML='<span class="done">🏁</span>';$("exname").textContent="Тренировка завершена!";$("next").textContent="";
  $("arc").style.strokeDashoffset=0;$("arc").style.stroke="var(--rest)";$("left").textContent="0:00";$("pause").textContent="↻ Заново"}
 function stop(){clearInterval(timer);try{speechSynthesis.cancel()}catch(e){}try{wl&&wl.release();wl=null;keep&&keep.pause()}catch(e){}$("run").style.display="none";$("setup").style.display="block"}
@@ -252,8 +257,8 @@ $("skip").onclick=()=>{if(idx<seq.length)go(idx+1)};
 $("pause").onclick=()=>{
  if(idx>=seq.length)return go(0);
  paused=!paused;
- if(paused){$("pause").textContent="▶ Продолжить";$("phase").textContent="Пауза"}
- else{endAt=performance.now()+remain*1000;$("pause").textContent="❚❚ Пауза";$("phase").textContent=PH[seq[idx].t]}};
+ if(paused){$("pause").textContent="▶ Продолжить";$("phase").className="phase";$("phase").textContent="Пауза"}
+ else{endAt=performance.now()+remain*1000;$("pause").textContent="❚❚ Пауза";showPhase(seq[idx])}};
 document.addEventListener("keydown",e=>{if($("run").style.display==="flex"&&e.code==="Space"){e.preventDefault();$("pause").click()}});
 ["dEx","dPar"].forEach(id=>{const d=$(id);try{d.open=localStorage.getItem("open_"+id)==="1"}catch(e){}
  d.addEventListener("toggle",()=>{try{localStorage.setItem("open_"+id,d.open?"1":"0")}catch(e){}})});
